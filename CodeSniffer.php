@@ -183,8 +183,7 @@ class PHP_CodeSniffer
     public $defaultFileExtensions = array(
                                      'php' => 'PHP',
                                      'inc' => 'PHP',
-                                     'js'  => 'JS',
-                                     'css' => 'CSS',
+									//F-F-F：去除默认的js与css检测
                                     );
 
     /**
@@ -1717,7 +1716,8 @@ class PHP_CodeSniffer
      * @throws PHP_CodeSniffer_Exception If the file could not be processed.
      * @see    _processFile()
      */
-    public function processFile($file, $contents=null)
+	//F-F-F：新增默认变量$user_name
+    public function processFile($file, $contents=null, $user_name = '')
     {
         if ($contents === null && file_exists($file) === false) {
             throw new PHP_CodeSniffer_Exception("Source file $file does not exist");
@@ -1791,7 +1791,8 @@ class PHP_CodeSniffer
 
         if (PHP_CODESNIFFER_INTERACTIVE === false) {
             // Cache the report data for this file so we can unset it to save memory.
-            $this->reporting->cacheFileReport($phpcsFile, $cliValues);
+			//F-F-F：新增默认变量$user_name
+            $this->reporting->cacheFileReport($phpcsFile, $cliValues, $user_name);
             $phpcsFile->cleanUp();
             return $phpcsFile;
         }
@@ -1812,7 +1813,8 @@ class PHP_CodeSniffer
 
             $reportClass = $this->reporting->factory('full');
             $reportData  = $this->reporting->prepareFileReport($phpcsFile);
-            $reportClass->generateFileReport($reportData, $phpcsFile, $cliValues['showSources'], $cliValues['reportWidth']);
+			//F-F-F：新增默认变量$user_name
+            $reportClass->generateFileReport($reportData, $phpcsFile, $cliValues['showSources'], $cliValues['reportWidth'], $user_name);
 
             echo '<ENTER> to recheck, [s] to skip or [q] to quit : ';
             $input = fgets(STDIN);
@@ -2386,11 +2388,11 @@ class PHP_CodeSniffer
             } else {
                 $configFile = dirname(__FILE__).'/CodeSniffer.conf';
                 if (is_file($configFile) === false
-                    && strpos('@data_dir@', '@data_dir') === false
+                    && strpos('/data/app/php-cgi/lib/php/data', '@data_dir') === false
                 ) {
                     // If data_dir was replaced, this is a PEAR install and we can
                     // use the PEAR data dir to store the conf file.
-                    $configFile = '@data_dir@/PHP_CodeSniffer/CodeSniffer.conf';
+                    $configFile = '/data/app/php-cgi/lib/php/data/PHP_CodeSniffer/CodeSniffer.conf';
                 }
             }
 
@@ -2451,7 +2453,7 @@ class PHP_CodeSniffer
         } else {
             $configFile = dirname(__FILE__).'/CodeSniffer.conf';
             if (is_file($configFile) === false) {
-                $configFile = '@data_dir@/PHP_CodeSniffer/CodeSniffer.conf';
+                $configFile = '/data/app/php-cgi/lib/php/data/PHP_CodeSniffer/CodeSniffer.conf';
             }
         }
 

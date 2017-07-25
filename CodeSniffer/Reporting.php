@@ -141,7 +141,8 @@ class PHP_CodeSniffer_Reporting
      *
      * @return void
      */
-    public function cacheFileReport(PHP_CodeSniffer_File $phpcsFile, array $cliValues)
+	//F-F-F：新增默认变量$user_name
+    public function cacheFileReport(PHP_CodeSniffer_File $phpcsFile, array $cliValues, $user_name = '')
     {
         if (isset($cliValues['reports']) === false) {
             // This happens during unit testing, or any time someone just wants
@@ -157,7 +158,8 @@ class PHP_CodeSniffer_Reporting
             $report      = get_class($reportClass);
 
             ob_start();
-            $result = $reportClass->generateFileReport($reportData, $phpcsFile, $cliValues['showSources'], $cliValues['reportWidth']);
+			//F-F-F：新增默认变量$user_name
+            $result = $reportClass->generateFileReport($reportData, $phpcsFile, $cliValues['showSources'], $cliValues['reportWidth'], $user_name);
             if ($result === true) {
                 $errorsShown = true;
             }
@@ -308,14 +310,15 @@ class PHP_CodeSniffer_Reporting
                    'fixable'  => $phpcsFile->getFixableCount(),
                    'messages' => array(),
                   );
-
+				  
         if ($report['errors'] === 0 && $report['warnings'] === 0) {
             // Prefect score!
             return $report;
         }
 
         $errors = array();
-
+		//F-F-F：检索文件次数，防止文件过大造成网络请求超时
+		$limit_search = 0;
         // Merge errors and warnings.
         foreach ($phpcsFile->getErrors() as $line => $lineErrors) {
             if (is_array($lineErrors) === false) {
@@ -338,6 +341,12 @@ class PHP_CodeSniffer_Reporting
             }//end foreach
 
             ksort($errors[$line]);
+			//F-F-F：检索文件次数，防止文件过大造成网络请求超时
+			$limit_search ++;
+			if ($limit_search > 20){
+				$limit_search = 0;
+				break;
+			}
         }//end foreach
 
         foreach ($phpcsFile->getWarnings() as $line => $lineWarnings) {
@@ -372,6 +381,12 @@ class PHP_CodeSniffer_Reporting
             }//end foreach
 
             ksort($errors[$line]);
+			//F-F-F：检索文件次数，防止文件过大造成网络请求超时
+			$limit_search ++;
+            if ($limit_search > 20){
+                $limit_search = 0;
+                break;
+            }
         }//end foreach
 
         ksort($errors);

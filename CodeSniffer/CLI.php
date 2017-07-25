@@ -1072,8 +1072,9 @@ class PHP_CodeSniffer_CLI
                 $return -= $warnings;
             }
         }
-
-        return $return;
+		
+		//F-F-F：返回总数，错误数与警告数
+		return array('all' => $return, 'error' => $errors, 'warn' => $warnings);
 
     }//end printErrorReport()
 

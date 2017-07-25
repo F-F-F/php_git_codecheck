@@ -31,8 +31,11 @@
  */
 class PHP_CodeSniffer_Reports_Full implements PHP_CodeSniffer_Report
 {
-
-
+	
+	
+	//F-F-F：定义shell脚本路径与错误数量
+    private $shell_path = '/data/webapp/default/PHP/CheckServer/config/save_data.sh';
+    private $warn =  50;
     /**
      * Generate a partial report for a single processed file.
      *
@@ -51,9 +54,13 @@ class PHP_CodeSniffer_Reports_Full implements PHP_CodeSniffer_Report
         $report,
         PHP_CodeSniffer_File $phpcsFile,
         $showSources=false,
-        $width=80
+        $width=80,
+		$user_name=''
     ) {
+		//F-F-F：执行脚本文件，错误数为0时，记录为0:0
+        $file = $report['filename'];
         if ($report['errors'] === 0 && $report['warnings'] === 0) {
+	    shell_exec($this->shell_path . ' ' . $user_name . ' 0:0 ' . $file);
             // Nothing to print.
             return false;
         }
@@ -94,8 +101,10 @@ class PHP_CodeSniffer_Reports_Full implements PHP_CodeSniffer_Report
                 }
             }
         }
-
-        $file       = $report['filename'];
+		
+		//F-F-F：执行脚本文件，记录错误与警告数
+		$shell_warn = $report['warnings'] > $this->warn ? $report['warnings'] : 0; 
+		shell_exec($this->shell_path . ' ' . $user_name . ' ' . $report['errors'] . ':' . $shell_warn . ' ' . $file);
         $fileLength = strlen($file);
         $maxWidth   = max(($fileLength + 6), ($maxErrorLength + $paddingLength));
         $width      = min($width, $maxWidth);
