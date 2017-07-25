@@ -1,0 +1,86 @@
+﻿#!/usr/bin/php
+<?php
+/**
+ * @Description  git代码规范客户端php文件
+ * @author F。 822460782@qq.com
+ * @version 2017-3-27
+ * @modify 2017-3-27 17:02:46
+ */
+//F-F-F：修改配置的下载地址
+//服务端url地址
+//$bosun_path
+$url = 'http://****/PHP/CheckServer/client/save_client.php';
+$server_url = 'http://****/PHP/CheckServer/client/get_client.php';
+$crlf = shell_exec('git config core.autocrlf');
+if($crlf != 'input'){
+	exec('git config core.autocrlf input');
+}
+//获取提交内容文件地址
+$user_handle  = popen('git config user.name', 'r');
+if ($user_handle === false) {
+	echo 'ERROR: Could not execute git config user.name'.PHP_EOL.PHP_EOL;
+	exit(1);
+}
+$user = stream_get_contents($user_handle);
+fclose($user_handle);
+$email_handle  = popen('git config user.email', 'r');
+if ($email_handle === false) {
+	echo 'ERROR: Could not execute git config user.email'.PHP_EOL.PHP_EOL;
+	exit(1);
+}
+$email = stream_get_contents($email_handle);
+fclose($email_handle);
+$remote_handle  = popen('git remote -v', 'r');
+if ($remote_handle === false) {
+	echo 'ERROR: Could not execute git remote -v'.PHP_EOL.PHP_EOL;
+	exit(1);
+}
+$remote = str_replace(' (push)','',basename(stream_get_contents($remote_handle)));
+fclose($remote_handle);
+$content_array = array();
+exec('git diff-index --cached --name-only HEAD',$files_array);
+if(!empty($files_array)){
+	exec('pwd',$path);
+	$this_path = empty($path[0]) ? '' : $path[0];
+	$server_var[] = $this_path;
+	foreach($files_array as $files_array_key){
+		//获取真实路径
+		$real_path = $this_path . '/' . $files_array_key;
+		$command = 'cat ' . $real_path;
+		//启动cat进程，获取内容
+		$handle  = popen($command, 'r');
+		if ($handle === false) {
+			echo 'ERROR: Could not execute "'.$command.'"'.PHP_EOL.PHP_EOL;
+			exit(1);
+		}
+		$contents = stream_get_contents($handle);
+		fclose($handle);
+		$content_array[$files_array_key] = $contents;
+	}
+}
+//检测与记录结果
+$post_data = array(
+	'version'=> 'v2.2',
+	'version_passwd'=> 'dkjcIeuhMCgrO0O0OeO0O0Of',
+	'token' => 'CodeSniffer',
+	'content' => json_encode($content_array),
+	'user' => $user,
+	'email' => $email,
+	'remote' => $remote,
+);
+$ch = curl_init();
+curl_setopt($ch, CURLOPT_URL, $url);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+curl_setopt($ch, CURLOPT_POST, 1);
+curl_setopt($ch, CURLOPT_POSTFIELDS, $post_data);
+$output = curl_exec($ch);
+print_r($output);
+//检测
+$server_ch = curl_init();
+curl_setopt($server_ch, CURLOPT_URL, $server_url);
+curl_setopt($server_ch, CURLOPT_RETURNTRANSFER, 1);
+curl_setopt($server_ch, CURLOPT_POST, 1);
+curl_setopt($server_ch, CURLOPT_POSTFIELDS, $post_data);
+$result = intval(curl_exec($server_ch));
+curl_close($server_ch);
+exit($result);

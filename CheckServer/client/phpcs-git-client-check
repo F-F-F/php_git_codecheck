@@ -1,0 +1,161 @@
+<?php
+/**
+ * @Description  git代码规范服务端php文件，根据svn代码检测修改，检测代码
+ * @author F。 822460782@qq.com
+ * @version 2017-3-27
+ * @modify 2017-3-27 17:02:46
+ */
+/**
+ * A commit hook for GIT.
+ *
+ * @category  PHP
+ * @package   PHP_CodeSniffer
+ * @author    F。<822460782@qq.com>
+ * @link      http://aabiji.com
+ */
+if (is_file(dirname(__FILE__) . '/../CodeSniffer/CLI.php') === true) {
+    include_once dirname(__FILE__) . '/../CodeSniffer/CLI.php';
+} else {
+    include_once '../../CodeSniffer/CLI.php';
+}
+
+define('PHP_CODESNIFFER_GIT', '/usr/bin/git');
+
+/**
+ * A class to process command line options.
+ *
+ * @category  PHP
+ * @package   PHP_CodeSniffer
+ * @author    F。<822460782@qq.com>
+ * @link      http://aabiji.com
+ */
+class PHP_CodeSniffer_Git_Hook extends PHP_CodeSniffer_CLI
+{
+
+    /**
+     * Get a list of default values for all possible command line arguments.
+     *
+     * @return array
+     */
+    public function getDefaults()
+    {
+        $defaults = parent::getDefaults();
+
+        $defaults['gitArgs'] = array();
+        return $defaults;
+    }
+//end getDefaults()
+
+    /**
+     * Processes an unknown command line argument.
+     *
+     * Assumes all unknown arguments are files and folders to check.
+     *
+     * @param string $arg The command line argument.
+     * @param int    $pos The position of the argument on the command line.
+     *
+     * @return void
+     */
+    public function processUnknownArgument($arg, $pos)
+    {
+        $this->values['gitArgs'][] = escapeshellarg($arg);
+    }
+//end processUnknownArgument()
+
+    /**
+     * Runs PHP_CodeSniffer over files are directories.
+     *
+     * @param array $values An array of values determined from CLI args.
+     *
+     * @return int The number of error and warning messages shown.
+     * @see    getCommandLineValues()
+     */
+    public function process($values = array(),$client_content = array(),$user_name='')
+    {
+        $values = array_merge($this->getDefaults(), $values);
+        $this->values = $values;
+        $values['standard'] = $this->validateStandard($values['standard']);
+        foreach ($values['standard'] as $standard) {
+            if (PHP_CodeSniffer::isInstalledStandard($standard) === false) {
+                // They didn't select a valid coding standard, so help them
+                // out by letting them know which standards are installed.
+                echo 'ERROR: the "' . $standard . '" coding standard is not installed. ';
+                $this->printInstalledStandards();
+                exit(2);
+            }
+        }
+
+        $phpcs = new PHP_CodeSniffer(
+        $values['verbosity'], $values['tabWidth'], $values['encoding']
+        );
+
+        // Set file extensions if they were specified. Otherwise,
+        // let PHP_CodeSniffer decide on the defaults.
+        if (empty($values['extensions']) === false) {
+            $phpcs->setAllowedFileExtensions($values['extensions']);
+        } else {
+            $phpcs->setAllowedFileExtensions(array_keys($phpcs->defaultFileExtensions));
+        }
+
+        // Set ignore patterns if they were specified.
+        if (empty($values['ignored']) === false) {
+            $phpcs->setIgnorePatterns($values['ignored']);
+        }
+
+        // Set some convenience member vars.
+        if ($values['errorSeverity'] === null) {
+            $this->errorSeverity = PHPCS_DEFAULT_ERROR_SEV;
+        } else {
+            $this->errorSeverity = $values['errorSeverity'];
+        }
+
+        if ($values['warningSeverity'] === null) {
+            $this->warningSeverity = PHPCS_DEFAULT_WARN_SEV;
+        } else {
+            $this->warningSeverity = $values['warningSeverity'];
+        }
+
+        if (empty($values['reports']) === true) {
+            $this->values['reports']['full'] = $values['reportFile'];
+        }
+
+        // Initialize PHP_CodeSniffer listeners but don't process any files.
+        $phpcs->setCli($this);
+        $phpcs->initStandard($values['standard'], $values['sniffs']);
+        // Get Git diff file list
+		if(!empty($client_content)){
+			foreach ($client_content as $client_content_key => $client_content_value) {
+				$phpcs->processFile($client_content_key, $client_content_value,$user_name);
+			}
+		}
+        return $this->printErrorReport(
+			$phpcs, $values['reports'], $values['showSources'], $values['reportFile'], $values['reportWidth']
+        );
+    }
+//end process()
+
+    /**
+     * Prints out the usage information for this script.
+     *
+     * @return void
+     */
+    public function printUsage()
+    {
+        parent::printUsage();
+
+        echo PHP_EOL;
+        echo 'Gitlab_code_check is error,Please contact Li Bei ！' . PHP_EOL;
+    }
+//end printUsage()
+}
+
+//end class
+
+$phpcs = new PHP_CodeSniffer_Git_Hook();
+PHP_CodeSniffer_Reporting::startTiming();
+$phpcs->checkRequirements();
+echo PHP_EOL . '检测中...' . PHP_EOL;
+$numErrors = $phpcs->process([],$client_content,$file_name);
+if ($numErrors['error'] !== 0 || $numErrors['warn'] >= 50) {
+    exit(1);
+}

@@ -1,0 +1,4 @@
+#!/bin/sh
+This_pwd=$(pwd)
+$This_pwd/.git/hooks/phpcs-git-client-pre-commit $1 -t $2 1>&2 || exit 1
+exit 0
