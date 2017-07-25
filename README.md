@@ -35,3 +35,9 @@
     - [ log.txt ] ---------------------------定时计划的日志文件
 - [ CodeSniffer ] -------------------------------PHP_CodeSniffer主程序目录
 - [ CodeSniffer.php ] --------------------------PHP_CodeSniffer主程序入口文件
+
+
+
+# 附：SVN代码检测文档
+
+地址：http://www.aabiji.com/notes/notes/id/12.html
